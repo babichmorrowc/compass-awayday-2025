@@ -1,3 +1,6 @@
+# Glove data
+/clustering-activity/glove/*
+
 # History files
 .Rhistory
 .Rapp.history
