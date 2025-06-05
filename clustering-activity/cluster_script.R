@@ -7,7 +7,7 @@ library(word2vec)
 # Import the survey data
 clustering_responses <- read_csv("clustering-activity/clustering_responses.csv") %>% 
   clean_names() %>% 
-  select(what_is_your_name,
+  select(name,
          starts_with("your"))
 
 # Clean the data
@@ -36,7 +36,7 @@ get_avg_vector <- function(words, embeddings) {
 
 # Apply to each person
 person_vectors <- t(sapply(responses_clean$tokens, get_avg_vector, embeddings = glove))
-rownames(person_vectors) <- responses_clean$what_is_your_name
+rownames(person_vectors) <- responses_clean$name
 
 # Dimensionality reduction
 pca <- prcomp(person_vectors, center = TRUE, scale. = TRUE)
@@ -50,7 +50,7 @@ responses_clean$kmeans_cluster <- as.factor(kmeans_result$cluster)
 # Plot K-means clustering
 ggplot(data = responses_clean, aes(x = pca_vectors[,1], y = pca_vectors[,2], color = kmeans_cluster, fill = kmeans_cluster)) +
   geom_point() +
-  geom_text(aes(label = what_is_your_name), vjust = -1, size = 3) +
+  geom_text(aes(label = name), vjust = -1, size = 3) +
   # Plot the centers
   # geom_point(data = as.data.frame(kmeans_result$centers), aes(x = PC1, y = PC2), color = "black", fill = "black", size = 3, shape = 8) +
   labs(title = "K-means Clustering", x = "PC1", y = "PC2") +
@@ -64,8 +64,13 @@ points(kmeans_result$centers, col = 1:3, pch = 8, cex = 2)
 
 # Hierarchical clustering
 hc <- hclust(dist(pca_vectors))
-responses_clean$hcluster <- cutree(hc, k = 3)
-plot(hc, labels = responses_clean$what_is_your_name)
+responses_clean$hcluster <- cutree(hc, k = 4)
+plot(hc, labels = responses_clean$name)
+# Colored plot
+dend <- as.dendrogram(hc)
+dend_colored <- color_branches(dend, k = 4, col = RColorBrewer::brewer.pal(4, "Set1"))
+plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
+plot(dend)
 
 # Get the cosine similarity matrix
 cosine_similarity <- function(a, b) {
@@ -73,8 +78,8 @@ cosine_similarity <- function(a, b) {
 }
 n <- nrow(person_vectors)
 similarity_matrix <- matrix(0, nrow = n, ncol = n)
-rownames(similarity_matrix) <- responses_clean$what_is_your_name
-colnames(similarity_matrix) <- responses_clean$what_is_your_name
+rownames(similarity_matrix) <- responses_clean$name
+colnames(similarity_matrix) <- responses_clean$name
 for (i in 1:n) {
   for (j in 1:n) {
     similarity_matrix[i, j] <- cosine_similarity(person_vectors[i, ], person_vectors[j, ])

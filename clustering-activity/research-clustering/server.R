@@ -68,9 +68,6 @@ function(input, output, session) {
     kmeans(pca_vectors, centers = input$nclust, nstart = 20)
   })
   
-  # Balanced K-means clustering
-  
-  
   # Hierarchical clustering
   hc <- hclust(dist(pca_vectors))
   dend <- as.dendrogram(hc)
@@ -82,7 +79,7 @@ function(input, output, session) {
     if (input$clust_method == "kmeans") {
       df$cluster <- as.factor(kmeans_result()$cluster)
     } else {
-      df$cluster <- as.factor(cutree(hc, k = input$nclust))
+      df$cluster <- clusters_hclust()
     }
     df
   })
@@ -108,7 +105,6 @@ function(input, output, session) {
     } else {
       # Plot hierarchical clustering
       dend_colored <- color_branches(dend, k = input$nclust, col = RColorBrewer::brewer.pal(input$nclust, "Set1"))
-      labels(dend_colored) <- responses_clean$name
       plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
     }
     
