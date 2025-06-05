@@ -61,13 +61,15 @@ for (i in 1:n) {
   }
 }
 
-# Define server logic required to draw a histogram
 function(input, output, session) {
   # K-means clustering
   set.seed(123)
   kmeans_result <- reactive({
-    kmeans(pca_vectors, centers = input$nclust)
+    kmeans(pca_vectors, centers = input$nclust, nstart = 20)
   })
+  
+  # Balanced K-means clustering
+  
   
   # Hierarchical clustering
   hc <- hclust(dist(pca_vectors))
@@ -96,23 +98,49 @@ function(input, output, session) {
                                          y = pca_vectors[,2],
                                          color = cluster)
       ) +
-        geom_point(size = 3) +
-        geom_text(aes(label = name), vjust = -1, size = 3) +
+        geom_point(size = 5) +
+        geom_text(aes(label = name), vjust = -1, size = 5) +
+        scale_color_brewer(palette = "Set1") +
         labs(title = "K-means Clustering", x = "PC1", y = "PC2", color = "Cluster") +
         guides(label = "none") +
         theme_minimal()
       
     } else {
       # Plot hierarchical clustering
-      dend_colored <- color_branches(dend, k = input$nclust)
+      dend_colored <- color_branches(dend, k = input$nclust, col = RColorBrewer::brewer.pal(input$nclust, "Set1"))
       labels(dend_colored) <- responses_clean$name
       plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
     }
     
   })
   
+  # Table of cluster membership
+  output$cluster_table <- renderDT({
+    df <- clustered_data()
+    cluster_assignments <- df %>%
+      select(name, cluster) %>% 
+      arrange(cluster)
+    
+    all_clusters <- sort(unique(cluster_assignments$cluster))
+    palette <- RColorBrewer::brewer.pal(input$nclust, "Set1")
+    cluster_colors <- setNames(palette[seq_along(all_clusters)], all_clusters)
+    
+    datatable(
+      cluster_assignments,
+      escape = FALSE,
+      options = list(pageLength = 25),
+      rownames = FALSE,
+      caption = "Cluster membership:"
+    ) %>%
+      formatStyle(
+        columns = names(cluster_assignments),
+        target = "row",
+        backgroundColor = styleEqual(names(cluster_colors), cluster_colors)
+      )
+  })
+  
   # Table of closest and furthest researchers
-  output$table <- renderDT({
+  output$close_far_table <- renderDT({
     df <- clustered_data()
     cluster_assignments <- df %>%
       select(name, cluster)

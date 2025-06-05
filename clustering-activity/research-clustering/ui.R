@@ -18,18 +18,22 @@ fluidPage(
                    "Clustering method:",
                    choices = c("K-means" = "kmeans",
                                "Hierarchical" = "hclust"),
-                   selected = "hclust")
+                   selected = "kmeans")
     ),
     
     mainPanel(
       # Tab for the clustering
       tabsetPanel(
         tabPanel("Clustering",
-                 plotOutput("clustPlot")
+                 plotOutput("clustPlot", height = "600px")
         ),
-        # Tab for a table
+        # Tab for cluster membership table
+        tabPanel("Cluster membership",
+                 DTOutput("cluster_table")
+        ),
+        # Tab for closest / furthest researcher table
         tabPanel("Closest / Furthest research",
-                 DTOutput("table")
+                 DTOutput("close_far_table")
         )
       )
     )
