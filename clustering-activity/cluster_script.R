@@ -72,6 +72,20 @@ dend_colored <- color_branches(dend, k = 4, col = RColorBrewer::brewer.pal(4, "S
 plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
 plot(dend)
 
+raw_clusters <- cutree(hc, k = 4)
+cluster_sizes <- sort(table(raw_clusters), decreasing = TRUE)
+relabel_map <- setNames(seq_along(cluster_sizes), names(cluster_sizes))
+new_clusters <- as.integer(relabel_map[as.character(raw_clusters)])
+
+# Assign new labels to dendrogram
+labels_colors <- setNames(RColorBrewer::brewer.pal(4, "Set1")[new_clusters], names(new_clusters))
+dend_colored <- dend %>%
+  set("labels", responses_clean$name) %>%
+  set("branches_k_color", k = 4, value = RColorBrewer::brewer.pal(4, "Set1")[unique(new_clusters)])
+
+# dend_colored <- color_branches(dend, k = input$nclust, col = RColorBrewer::brewer.pal(input$nclust, "Set1"))
+plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
+
 # Get the cosine similarity matrix
 cosine_similarity <- function(a, b) {
   sum(a * b) / (sqrt(sum(a^2)) * sqrt(sum(b^2)))

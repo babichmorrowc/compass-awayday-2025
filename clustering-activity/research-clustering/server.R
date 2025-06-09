@@ -76,11 +76,19 @@ function(input, output, session) {
   # Add cluster assignment to data:
   clustered_data <- reactive({
     df <- responses_clean
-    if (input$clust_method == "kmeans") {
-      df$cluster <- as.factor(kmeans_result()$cluster)
+    # Get raw cluster assignments
+    raw_clusters <- if (input$clust_method == "kmeans") {
+      kmeans_result()$cluster
     } else {
-      df$cluster <- clusters_hclust()
+      clusters_hclust()
     }
+    
+    # Reorder cluster labels by size (largest cluster = 1)
+    cluster_sizes <- sort(table(raw_clusters), decreasing = TRUE)
+    relabel_map <- setNames(seq_along(cluster_sizes), names(cluster_sizes))  # old label → new label
+    new_clusters <- as.integer(relabel_map[as.character(raw_clusters)])
+    
+    df$cluster <- factor(new_clusters, levels = sort(unique(new_clusters)))
     df
   })
   
@@ -104,7 +112,18 @@ function(input, output, session) {
       
     } else {
       # Plot hierarchical clustering
-      dend_colored <- color_branches(dend, k = input$nclust, col = RColorBrewer::brewer.pal(input$nclust, "Set1"))
+      raw_clusters <- clusters_hclust()
+      cluster_sizes <- sort(table(raw_clusters), decreasing = TRUE)
+      relabel_map <- setNames(seq_along(cluster_sizes), names(cluster_sizes))
+      new_clusters <- as.integer(relabel_map[as.character(raw_clusters)])
+      
+      # Assign new labels to dendrogram
+      labels_colors <- setNames(RColorBrewer::brewer.pal(input$nclust, "Set1")[new_clusters], names(new_clusters))
+      dend_colored <- dend %>%
+        set("labels", responses_clean$name) %>%
+        set("branches_k_color", k = input$nclust, value = RColorBrewer::brewer.pal(input$nclust, "Set1")[unique(new_clusters)])
+      
+      # dend_colored <- color_branches(dend, k = input$nclust, col = RColorBrewer::brewer.pal(input$nclust, "Set1"))
       plot(dend_colored, main = "Hierarchical Clustering", ylab = "Height")
     }
     
